@@ -13,13 +13,75 @@ import {
   BrandLeaves,
 } from "@/components/brand/brand-shapes";
 
+// Supabase/Google errors arrive raw ("PKCE code verifier not found in
+// storage…"). Translate the ones people actually hit into what to do next;
+// anything unrecognised gets a generic retry message with the raw text kept
+// underneath so HR can still see what went wrong.
+function friendlyAuthError(raw: string): { message: string; detail?: string } {
+  const r = raw.toLowerCase();
+  if (
+    r.includes("code verifier") ||
+    r.includes("code challenge") ||
+    r.includes("no_code_provided") ||
+    r.includes("exchange external code") ||
+    r.includes("flow state")
+  ) {
+    return {
+      message:
+        "Your Google sign-in didn't finish. Click \"Sign in with Google\" again. If it keeps happening, close this tab and open trinityhr.vercel.app directly in Chrome or Safari (not from a link inside Slack, Gmail or another app), then try again.",
+    };
+  }
+  if (r.includes("access_denied") || r.includes("cancel")) {
+    return {
+      message:
+        "Google sign-in was cancelled. Click \"Sign in with Google\" to try again.",
+    };
+  }
+  if (
+    r.includes("signups not allowed") ||
+    r.includes("database error saving new user") ||
+    r.includes("user not found")
+  ) {
+    return {
+      message:
+        "This Google account doesn't have access. Sign in with your @ortusclub.com Google account, or ask HR to add you.",
+    };
+  }
+  if (r.includes("invalid login credentials")) {
+    return {
+      message:
+        "Wrong email or password. Try again, or click \"Forgot Password\" to reset it.",
+    };
+  }
+  if (r.includes("email not confirmed")) {
+    return {
+      message:
+        "Your account hasn't been activated yet. Use the setup link in your welcome email, or ask HR to resend it.",
+    };
+  }
+  if (r.includes("rate limit") || r.includes("too many")) {
+    return {
+      message: "Too many attempts. Wait a minute, then try again.",
+    };
+  }
+  return {
+    message:
+      "Sign-in didn't work. Please try again. If it keeps happening, send HR a screenshot of this message.",
+    detail: raw,
+  };
+}
+
 function LoginForm() {
   const searchParams = useSearchParams();
   const urlError = searchParams.get("error");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(urlError ? decodeURIComponent(urlError) : "");
+  const initialError = urlError
+    ? friendlyAuthError(decodeURIComponent(urlError))
+    : null;
+  const [error, setError] = useState(initialError?.message ?? "");
+  const [errorDetail, setErrorDetail] = useState(initialError?.detail ?? "");
   const [loading, setLoading] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
@@ -58,6 +120,7 @@ function LoginForm() {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setErrorDetail("");
 
     const supabase = createClient();
     const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -66,7 +129,9 @@ function LoginForm() {
     });
 
     if (signInError) {
-      setError(signInError.message);
+      const friendly = friendlyAuthError(signInError.message);
+      setError(friendly.message);
+      setErrorDetail(friendly.detail ?? "");
       setLoading(false);
       return;
     }
@@ -77,11 +142,13 @@ function LoginForm() {
   const handleForgotPassword = async () => {
     if (!email) {
       setError("Enter your email address first, then click Forgot Password.");
+      setErrorDetail("");
       return;
     }
 
     setForgotLoading(true);
     setError("");
+    setErrorDetail("");
 
     try {
       const res = await fetch("/api/auth/forgot-password", {
@@ -144,7 +211,10 @@ function LoginForm() {
 
         {error && (
           <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
-            {error}
+            <p>{error}</p>
+            {errorDetail && (
+              <p className="mt-1 text-xs text-red-500">Details: {errorDetail}</p>
+            )}
           </div>
         )}
 

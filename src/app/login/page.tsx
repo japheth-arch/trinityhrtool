@@ -39,6 +39,13 @@ function LoginForm() {
 
   const handleGoogleLogin = async () => {
     const supabase = createClient();
+    // Let the client finish recovering any old session first. With a stale
+    // session cookie (dead refresh token), its startup refresh fails a moment
+    // later and _removeSession() wipes the PKCE code-verifier cookie that
+    // signInWithOAuth just wrote — so the callback fails with "PKCE code
+    // verifier not found" and only the second click works. getSession() waits
+    // for that recovery to finish before we start the OAuth flow.
+    await supabase.auth.getSession();
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {

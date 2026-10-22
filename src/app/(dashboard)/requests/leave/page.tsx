@@ -21,6 +21,12 @@ interface BalanceWarning {
   newBalance: number;
 }
 
+// Annual leads the picker (and is the default) — alphabetical order put
+// Anniversary first, and people kept filing it by mistake.
+function annualFirst(types: string[]) {
+  return [...types].sort((a, b) => Number(b === "annual") - Number(a === "annual"));
+}
+
 export default function LeaveRequestPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -104,7 +110,7 @@ export default function LeaveRequestPage() {
       setHolidaySet(localHolidays);
 
       const activatedTypes = (activated ?? []).map((a) => a.leave_type);
-      const available = [...UNIVERSAL_LEAVE_TYPES, ...activatedTypes];
+      const available = annualFirst([...UNIVERSAL_LEAVE_TYPES, ...activatedTypes]);
       setAvailableTypes(available);
       setForm((f) => ({ ...f, leave_type: available[0] ?? "" }));
 
@@ -215,12 +221,14 @@ export default function LeaveRequestPage() {
       // has via an assigned plan or active credit (allocMap keys) — not just
       // universal + per-type activations. Without this, plan-granted types like
       // Bereavement showed a balance but couldn't be selected here.
-      const requestable = Array.from(
-        new Set([
-          ...UNIVERSAL_LEAVE_TYPES,
-          ...activatedTypes,
-          ...Object.keys(allocMap),
-        ])
+      const requestable = annualFirst(
+        Array.from(
+          new Set([
+            ...UNIVERSAL_LEAVE_TYPES,
+            ...activatedTypes,
+            ...Object.keys(allocMap),
+          ])
+        )
       );
       setAvailableTypes(requestable);
       setForm((f) => ({ ...f, leave_type: f.leave_type || requestable[0] || "" }));
@@ -431,6 +439,18 @@ export default function LeaveRequestPage() {
               {Math.round(((planAllocations[form.leave_type] ?? 0) - (usedDays[form.leave_type] ?? 0)) * 100) / 100} day(s) available
             </p>
           )}
+          {form.leave_type === "anniversary" &&
+            !loadingTypes &&
+            (planAllocations.anniversary ?? 0) - (usedDays.anniversary ?? 0) <= 0 && (
+              <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-500" />
+                <p>
+                  You don&apos;t have any Anniversary Leave credits, so this will be{" "}
+                  <span className="font-semibold">unpaid</span>. Did you mean to file a
+                  different leave type, like <span className="font-semibold">Annual Leave</span>?
+                </p>
+              </div>
+            )}
         </div>
 
         {/* Duration: full day or half day */}

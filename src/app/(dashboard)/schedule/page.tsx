@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { createClient } from "@/lib/supabase/server";
 import { DAYS_OF_WEEK, LEAVE_TYPE_LABELS } from "@/lib/constants";
-import { formatTime, formatDate, cn, hasNightDifferentialHours, formatAdjustmentChange } from "@/lib/utils";
+import { formatTime, formatDate, cn, hasNightDifferentialHours, formatAdjustmentChange, adjustmentLabel } from "@/lib/utils";
 import { NightDiffNote } from "@/components/shared/night-diff-note";
 import type { Schedule } from "@/types/database";
 import { HOLIDAY_COUNTRY_LABELS } from "@/types/database";
@@ -154,6 +154,7 @@ export default async function SchedulePage() {
         location: adj.requested_work_location ?? schedule?.work_location ?? null,
         startTime: adj.requested_start_time,
         endTime: adj.requested_end_time,
+        adjustmentType: adj.adjustment_type,
       };
     }
 
@@ -320,7 +321,7 @@ export default async function SchedulePage() {
                         <NightDiffNote size="xs" />
                       )}
                       <span className="inline-block rounded bg-cyan-200 px-1.5 py-0.5 text-[10px] font-medium text-cyan-800">
-                        Adjusted
+                        {"adjustmentType" in info ? adjustmentLabel(info.adjustmentType) : "Adjusted"}
                       </span>
                     </div>
                   )}
@@ -399,7 +400,7 @@ export default async function SchedulePage() {
                     </p>
                   </div>
                   <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                    Adjusted
+                    {adjustmentLabel(adj.adjustment_type)}
                   </span>
                 </div>
               ))}

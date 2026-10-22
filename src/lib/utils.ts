@@ -30,6 +30,14 @@ export function toManilaTime(date: Date): Date {
  * (or legacy untyped) adjustment shows the requested time range; *both* shows
  * the time range plus the location swap.
  */
+/** Badge text naming what an adjustment changed: hours, location, or both. */
+export function adjustmentLabel(type?: string | null): string {
+  if (type === "time") return "Hours adjusted";
+  if (type === "location") return "Location adjusted";
+  if (type === "both") return "Hours & location adjusted";
+  return "Adjusted";
+}
+
 export function formatAdjustmentChange(adj: {
   adjustment_type?: string | null;
   requested_start_time?: string | null;

@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { format, startOfWeek, addDays, eachDayOfInterval, isSameDay, parseISO, isWeekend } from "date-fns";
 import { Flag } from "lucide-react";
-import { displayName, formatTime, cn, hasNightDifferentialHours } from "@/lib/utils";
+import { displayName, formatTime, cn, hasNightDifferentialHours, adjustmentLabel } from "@/lib/utils";
 import { UserNameLink } from "@/components/shared/user-name-link";
 import { HeaderFilter } from "@/components/shared/header-filter";
 import { SortButton } from "@/components/shared/sort-button";
@@ -290,6 +290,7 @@ export function WeeklyScheduleTable({ users, schedules, holidays }: Props) {
         location: adj.requested_work_location ?? (schedule?.work_location || null),
         startTime: adj.requested_start_time,
         endTime: adj.requested_end_time,
+        adjustmentType: adj.adjustment_type,
       };
     }
 
@@ -601,7 +602,7 @@ export function WeeklyScheduleTable({ users, schedules, holidays }: Props) {
                               <NightDiffNote size="xs" />
                             </div>
                           )}
-                          <div className="mt-0.5 text-[10px] text-cyan-700">Adjusted</div>
+                          <div className="mt-0.5 text-[10px] text-cyan-700">{adjustmentLabel(cell.adjustmentType)}</div>
                         </div>
                       )}
                       {cell.type === "schedule" && (

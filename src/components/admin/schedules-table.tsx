@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { DAYS_OF_WEEK } from "@/lib/constants";
 import { Search, Pencil, Flag } from "lucide-react";
-import { displayName, hasNightDifferentialHours } from "@/lib/utils";
+import { displayName, hasNightDifferentialHours, adjustmentLabel, formatAdjustmentChange } from "@/lib/utils";
 import { HeaderFilter } from "@/components/shared/header-filter";
 import { SortButton, type SortDir } from "@/components/shared/sort-button";
 import { NightDiffNote } from "@/components/shared/night-diff-note";
@@ -45,6 +45,8 @@ interface Adjustment {
   requested_date: string;
   requested_start_time: string;
   requested_end_time: string;
+  adjustment_type: string | null;
+  requested_work_location: string | null;
   status: string;
   reason: string;
 }
@@ -452,11 +454,10 @@ export function SchedulesTable({
                           className={`px-4 py-3 text-center ${isSelectedDay ? "bg-blue-50" : ""}`}
                         >
                           <span className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700">
-                            Adjusted
+                            {adjustmentLabel(dayAdjustment.adjustment_type)}
                           </span>
                           <p className="mt-0.5 text-xs text-amber-700 font-medium">
-                            {dayAdjustment.requested_start_time.slice(0, 5)} -{" "}
-                            {dayAdjustment.requested_end_time.slice(0, 5)}
+                            {formatAdjustmentChange(dayAdjustment)}
                           </p>
                         </td>
                       );
@@ -518,11 +519,10 @@ export function SchedulesTable({
                     {adjustment && (
                       <div className="space-y-0.5">
                         <span className="inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                          Adjusted
+                          {adjustmentLabel(adjustment.adjustment_type)}
                         </span>
                         <p className="text-xs text-gray-600">
-                          {adjustment.requested_start_time.slice(0, 5)} -{" "}
-                          {adjustment.requested_end_time.slice(0, 5)}
+                          {formatAdjustmentChange(adjustment)}
                         </p>
                         {hasNightDifferentialHours(adjustment.requested_start_time, adjustment.requested_end_time) && (
                           <NightDiffNote size="xs" />
